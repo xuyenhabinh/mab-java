@@ -51,6 +51,7 @@ public class Main {
 
         /***/
         AbstractList<Integer> rewards = simulate(linUCB, customerContext, buyBehavior, 1000, true);
+        linUCB.showLog();
 
         /** Visualize */
         AtomicInteger ai = new AtomicInteger();
@@ -62,7 +63,7 @@ public class Main {
         plt.plot()
                 .add(collect)
                 .label("Simulation")
-                .linestyle("--");
+                .linestyle("-");
         plt.xlabel("Iteration");
         plt.ylabel("Cumulative reward");
         plt.text(0.5, 0.2, "Simulation");

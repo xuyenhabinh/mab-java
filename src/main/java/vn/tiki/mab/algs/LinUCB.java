@@ -1,14 +1,21 @@
 package vn.tiki.mab.algs;
 
+import com.github.sh0nk.matplotlib4j.Plot;
+import com.github.sh0nk.matplotlib4j.PlotImpl;
+import com.github.sh0nk.matplotlib4j.PythonExecutionException;
+import com.github.sh0nk.matplotlib4j.builder.PlotBuilder;
 import org.ojalgo.matrix.Primitive64Matrix;
 import org.ojalgo.matrix.store.MatrixStore;
 import vn.tiki.mab.distribution.CustomerContext;
 import vn.tiki.mab.distribution.OfferContext;
 import vn.tiki.mab.utils.number.NumberUtils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class LinUCB extends AbstractAlgs {
 
@@ -52,10 +59,20 @@ public class LinUCB extends AbstractAlgs {
         currentContext = new Primitive64Matrix[K];
         currContextArray = new double[1][CURRENT_CONTEXT_LEN];
 
+        logUpperBound = new ArrayList[K];
+        logPredMean = new ArrayList[K];
+        logPredVar = new ArrayList[K];
+        logRewardSum = new ArrayList[K];
+
         /** Init value */
-        for (int i = 0; i < K; i++) {
-            precisionMatrix[i] = Primitive64Matrix.FACTORY.makeIdentity(CURRENT_CONTEXT_LEN);
-            b[i] = Primitive64Matrix.FACTORY.make(CURRENT_CONTEXT_LEN, 1);
+        for (int k = 0; k < K; k++) {
+            precisionMatrix[k] = Primitive64Matrix.FACTORY.makeIdentity(CURRENT_CONTEXT_LEN);
+            b[k] = Primitive64Matrix.FACTORY.make(CURRENT_CONTEXT_LEN, 1);
+
+            logUpperBound[k] = new ArrayList<>();
+            logPredMean[k] = new ArrayList<>();
+            logPredVar[k] = new ArrayList<>();
+            logRewardSum[k] = new ArrayList<>();
         }
     }
 
@@ -102,6 +119,12 @@ public class LinUCB extends AbstractAlgs {
         precisionMatrix[bestAction] = precisionMatrix[bestAction].add(currentContext[bestAction].multiply(currentContext[bestAction].transpose()));
 
         /** TODO: log */
+        for (int k = 0; k < K; k++) {
+            logUpperBound[k].add(upperBound[k]);
+            logPredMean[k].add(predMean[k].get(0, 0));
+            logPredVar[k].add(predVar[k].get(0, 0));
+            logRewardSum[k].add(Double.valueOf(rewardSum[k]));
+        }
 
         return bestAction;
     }
@@ -115,6 +138,64 @@ public class LinUCB extends AbstractAlgs {
      * Visualize LinUCB logs
      * */
     public void showLog() {
+        /** Visualize */
+        Plot plt = Plot.create();
 
+        /** Predictive mean */
+        for (int k = 0; k < K; k++) {
+            plt.plot()
+                    .add(logPredMean[k])
+                    .label(offerContexts.get(k).toString())
+                    .linestyle("-");
+        }
+        plt.xlabel("Iteration");
+        plt.ylabel("Predictive mean");
+        plt.text(0.5, 0.2, "Simulation");
+        plt.legend();
+        try {
+            plt.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (PythonExecutionException e) {
+            e.printStackTrace();
+        }
+
+        /** Predictive variance */
+        for (int k = 0; k < K; k++) {
+            plt.plot()
+                    .add(logPredVar[k])
+                    .label(offerContexts.get(k).toString())
+                    .linestyle("-");
+        }
+        plt.xlabel("Iteration");
+        plt.ylabel("Predictive variance");
+        plt.text(0.5, 0.2, "Simulation");
+        plt.legend();
+        try {
+            plt.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (PythonExecutionException e) {
+            e.printStackTrace();
+        }
+
+        /** Cumulative reward */
+        for (int k = 0; k < K; k++) {
+            plt.plot()
+                    .add(logRewardSum[k])
+                    .label(offerContexts.get(k).toString())
+                    .linestyle("-");
+        }
+        plt.xlabel("Iteration");
+        plt.ylabel("Cumulative sum");
+        plt.text(0.5, 0.2, "Simulation");
+        plt.legend();
+        try {
+            plt.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (PythonExecutionException e) {
+            e.printStackTrace();
+        }
     }
 }
