@@ -36,7 +36,6 @@ public class LinUCB extends AbstractAlgs {
     Primitive64Matrix[] weights;
     Primitive64Matrix[] b; /** TODO: what does 'b' mean? */
     Primitive64Matrix[] currentContext;
-    double[] upperBound;
     double[][] currContextArray;
     /**
      * Logging
@@ -116,9 +115,7 @@ public class LinUCB extends AbstractAlgs {
         roundNumber++;
 
         /** Update parameters */
-        precisionMatrix[bestAction] = precisionMatrix[bestAction].add(currentContext[bestAction].multiply(currentContext[bestAction].transpose()));
 
-        /** TODO: log */
         for (int k = 0; k < K; k++) {
             logUpperBound[k].add(upperBound[k]);
             logPredMean[k].add(predMean[k].get(0, 0));
@@ -132,6 +129,8 @@ public class LinUCB extends AbstractAlgs {
     public void setReward(int action, int reward) {
         rewardSum[action] += reward;
         b[action] = b[action].add(currentContext[action].multiply(reward));
+
+        precisionMatrix[action] = precisionMatrix[action].add(currentContext[action].multiply(currentContext[action].transpose()));
     }
 
     /**
@@ -150,7 +149,6 @@ public class LinUCB extends AbstractAlgs {
         }
         plt.xlabel("Iteration");
         plt.ylabel("Predictive mean");
-        plt.text(0.5, 0.2, "Simulation");
         plt.legend();
         try {
             plt.show();
@@ -169,7 +167,6 @@ public class LinUCB extends AbstractAlgs {
         }
         plt.xlabel("Iteration");
         plt.ylabel("Predictive variance");
-        plt.text(0.5, 0.2, "Simulation");
         plt.legend();
         try {
             plt.show();
@@ -188,7 +185,6 @@ public class LinUCB extends AbstractAlgs {
         }
         plt.xlabel("Iteration");
         plt.ylabel("Cumulative sum");
-        plt.text(0.5, 0.2, "Simulation");
         plt.legend();
         try {
             plt.show();
