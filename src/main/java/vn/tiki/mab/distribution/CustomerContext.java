@@ -11,7 +11,7 @@ public class CustomerContext extends AbstractContext {
     public void sample() {
         double stochasticCheap = 0.1 * NumberUtils.nextGaussian() + 0.7;
         cheap = NumberUtils.clip(stochasticCheap, 0.0, 1.0);
-        double stochasticFast = 0.1 * NumberUtils.nextGaussian() + 0.7;
+        double stochasticFast = 0.1 * NumberUtils.nextGaussian() + 0.6;
         fast = NumberUtils.clip(stochasticFast, 0.0, 1.0);
     }
 

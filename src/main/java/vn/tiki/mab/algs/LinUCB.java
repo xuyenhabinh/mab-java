@@ -1,11 +1,8 @@
 package vn.tiki.mab.algs;
 
 import com.github.sh0nk.matplotlib4j.Plot;
-import com.github.sh0nk.matplotlib4j.PlotImpl;
 import com.github.sh0nk.matplotlib4j.PythonExecutionException;
-import com.github.sh0nk.matplotlib4j.builder.PlotBuilder;
 import org.ojalgo.matrix.Primitive64Matrix;
-import org.ojalgo.matrix.store.MatrixStore;
 import vn.tiki.mab.distribution.CustomerContext;
 import vn.tiki.mab.distribution.OfferContext;
 import vn.tiki.mab.utils.number.NumberUtils;
@@ -14,8 +11,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 public class LinUCB extends AbstractAlgs {
 
@@ -32,10 +27,13 @@ public class LinUCB extends AbstractAlgs {
     /**
      * Parameters
      */
-    Primitive64Matrix[] precisionMatrix;
+    Primitive64Matrix[] theta;
+    Primitive64Matrix[] A_inv;
     Primitive64Matrix[] weights;
     Primitive64Matrix[] b; /** TODO: what does 'b' mean? */
     Primitive64Matrix[] currentContext;
+    Primitive64Matrix[] predVar;
+    Primitive64Matrix[] predMean;
     double[][] currContextArray;
     /**
      * Logging
@@ -52,7 +50,8 @@ public class LinUCB extends AbstractAlgs {
         rewardSum = new int[K];
         actionChoice = new int[K];
 
-        precisionMatrix = new Primitive64Matrix[K];
+        theta = new Primitive64Matrix[K];
+        A_inv = new Primitive64Matrix[K];
         weights = new Primitive64Matrix[K];
         b = new Primitive64Matrix[K];
         currentContext = new Primitive64Matrix[K];
@@ -62,10 +61,12 @@ public class LinUCB extends AbstractAlgs {
         logPredMean = new ArrayList[K];
         logPredVar = new ArrayList[K];
         logRewardSum = new ArrayList[K];
+        predVar = new Primitive64Matrix[K];
+        predMean = new Primitive64Matrix[K];
 
         /** Init value */
         for (int k = 0; k < K; k++) {
-            precisionMatrix[k] = Primitive64Matrix.FACTORY.makeIdentity(CURRENT_CONTEXT_LEN);
+            A_inv[k] = Primitive64Matrix.FACTORY.makeIdentity(CURRENT_CONTEXT_LEN);
             b[k] = Primitive64Matrix.FACTORY.make(CURRENT_CONTEXT_LEN, 1);
 
             logUpperBound[k] = new ArrayList<>();
@@ -76,14 +77,11 @@ public class LinUCB extends AbstractAlgs {
     }
 
     public int getAction(CustomerContext customerContext) {
-        int bestAction = -1;
-        double alpha = 1 + 1 / (roundNumber + 1);
+        int bestAction = 0;
+        double alpha = 1 + (double)1 / (roundNumber + 1);
         double[] upperBound = new double[K];
         double maxUpperBound = 0.0;
         ArrayList<Integer> candidates = new ArrayList<>();
-
-        Primitive64Matrix[] predVar = new Primitive64Matrix[K];
-        Primitive64Matrix[] predMean = new Primitive64Matrix[K];
 
         /** Loop over K arms */
         for (int k = 0; k < K; k++) {
@@ -94,10 +92,9 @@ public class LinUCB extends AbstractAlgs {
                     tempLen, offerContexts.get(k).toArray().length);
             currentContext[k] = Primitive64Matrix.FACTORY.columns(currContextArray);
 
-            Primitive64Matrix invertedMatrix = precisionMatrix[k].invert();
-            weights[k] = invertedMatrix.multiply(b[k]);
-            predVar[k] = currentContext[k].transpose().multiply(invertedMatrix).multiply(currentContext[k]);
-            predMean[k] = weights[k].transpose().multiply(currentContext[k]);
+            theta[k] = A_inv[k].multiply(b[k]);
+            predVar[k] = currentContext[k].transpose().multiply(A_inv[k]).multiply(currentContext[k]);
+            predMean[k] = theta[k].transpose().multiply(currentContext[k]);
             upperBound[k] = predMean[k].get(0, 0) + alpha * Math.sqrt(predVar[k].get(0, 0));
         }
 
@@ -130,7 +127,10 @@ public class LinUCB extends AbstractAlgs {
         rewardSum[action] += reward;
         b[action] = b[action].add(currentContext[action].multiply(reward));
 
-        precisionMatrix[action] = precisionMatrix[action].add(currentContext[action].multiply(currentContext[action].transpose()));
+        /** Avoid inversion using Sherman-Morrison formula */
+        Primitive64Matrix x_a = currentContext[action];
+        A_inv[action] = A_inv[action].subtract(((A_inv[action].multiply(x_a)).multiply(x_a.transpose().multiply(A_inv[action])))
+                .divide(((x_a.transpose().multiply(A_inv[action]).multiply(x_a)).add(1)).get(0, 0)));
     }
 
     /**

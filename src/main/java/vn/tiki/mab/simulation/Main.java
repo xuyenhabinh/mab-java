@@ -50,31 +50,31 @@ public class Main {
         BuyBehavior buyBehavior = new BuyBehavior();
 
         /***/
-        AbstractList<Integer> rewards = simulate(linUCB, customerContext, buyBehavior, 1000, true);
+        AbstractList<Integer> rewards = simulate(linUCB, customerContext, buyBehavior, 2000, true);
         linUCB.showLog();
 
         /** Visualize */
-        AtomicInteger ai = new AtomicInteger();
-        List<Integer> collect = rewards.stream()
-                .map(ai::addAndGet)
-                .collect(Collectors.toList());
-
-        Plot plt = Plot.create();
-        plt.plot()
-                .add(collect)
-                .label("Simulation")
-                .linestyle("-");
-        plt.xlabel("Iteration");
-        plt.ylabel("Cumulative reward");
-        plt.text(0.5, 0.2, "Simulation");
-        plt.title("Simulation");
-        plt.legend();
-        try {
-            plt.show();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (PythonExecutionException e) {
-            e.printStackTrace();
-        }
+//        AtomicInteger ai = new AtomicInteger();
+//        List<Integer> collect = rewards.stream()
+//                .map(ai::addAndGet)
+//                .collect(Collectors.toList());
+//
+//        Plot plt = Plot.create();
+//        plt.plot()
+//                .add(collect)
+//                .label("Simulation")
+//                .linestyle("-");
+//        plt.xlabel("Iteration");
+//        plt.ylabel("Cumulative reward");
+//        plt.text(0.5, 0.2, "Simulation");
+//        plt.title("Simulation");
+//        plt.legend();
+//        try {
+//            plt.show();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } catch (PythonExecutionException e) {
+//            e.printStackTrace();
+//        }
     }
 }
